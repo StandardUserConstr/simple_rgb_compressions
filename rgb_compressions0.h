@@ -47,11 +47,10 @@ uint64_t decompress_per1byte_data64(const uint8_t* const data_in,uint8_t* const 
 //=======================================================================================================================================
 
 
-
 //THIS COMPRESSION 'CAUSING THE LOSS OF THE IMAGE; THIS COMPRESSION CHANGING COLOR PALETTE INTO 256BYTE COLOR PALETTE;
 //=======================================================================================================================================
 //
-//            -------------------                   (IT'S NOT 1:1 VISUALISATION OF SIZE)
+//             -------------------                   (IT'S NOT 1:1 VISUALISATION OF SIZE)
 // ORYGINAL   | 55 55 55 22 22 22 |         256bit rgb map is in first 1024bytes of compressed data
 //             -------------------              ---------------------------------------------                  format of compressed data:
 //             -------------------             | 0 22 22 22 1 55 55 55 - - - - - - - - - - - |
@@ -71,14 +70,14 @@ uint64_t decompress_per1byte_data64(const uint8_t* const data_in,uint8_t* const 
 //
 //"size_of_palette_map_buffor" is for optymalisation purpose; this variable determines how much memory do you allocate for algorithm;
 //if u allocate not enough memory (for example for very colorful image 'cause there will be needed a lot of memory) then ur processor will do extra job to allocate memory in run;
-uint32_t compress_rgb_into_256bytes_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,uint32_t size_of_palette_map_buffor = 16384);
-uint64_t compress_rgb_into_256bytes_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,uint64_t size_of_palette_map_buffor = 16384);
+uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,uint32_t size_of_palette_map_buffor = 16384);
+uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,uint64_t size_of_palette_map_buffor = 16384);
 
 //-- DANGEROUS --
 //returns size of decompressed data pushed into "data_out" and decompressed data in "data_out";
 //if "data_out" is too small, then program will crash; size of data_out should be decompressed version of this data;
-uint32_t decompress_256bytes_map_into_rgb(const uint8_t* const data_in,uint8_t* const data_out);
-uint64_t decompress_256bytes_map_into_rgb64(const uint8_t* const data_in,uint8_t* const data_out);
+uint32_t decompress_8bits_map_into_rgb(const uint8_t* const data_in,uint8_t* const data_out);
+uint64_t decompress_8bits_map_into_rgb64(const uint8_t* const data_in,uint8_t* const data_out);
 
 //NOTE: a good combination is to combine compressing first through "compress_rgb_into_256bytes_map" and then through "compress_per1byte_data"
 
@@ -329,7 +328,7 @@ uint64_t decompress_per1byte_data64(const uint8_t* const data_in,uint8_t* const 
 }
 
 
-uint32_t compress_rgb_into_256bytes_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,uint32_t size_of_palette_map_buffor)
+uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,uint32_t size_of_palette_map_buffor)
 {
     if(size_of_data_in%3!=0) return 0; //if data for sure isn't in rgb format;
     if(size_of_palette_map_buffor==0) return 0;
@@ -461,7 +460,7 @@ uint32_t compress_rgb_into_256bytes_map(const uint8_t* const data_in,uint8_t* co
     return new_size_of_data_out;
 }
 
-uint64_t compress_rgb_into_256bytes_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,uint64_t size_of_palette_map_buffor)
+uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,uint64_t size_of_palette_map_buffor)
 {
     if(size_of_data_in%3!=0) return 0; //if data for sure isn't in rgb format;
     if(size_of_palette_map_buffor==0) return 0;
@@ -594,7 +593,7 @@ uint64_t compress_rgb_into_256bytes_map64(const uint8_t* const data_in,uint8_t* 
 }
 
 
-uint32_t decompress_256bytes_map_into_rgb(const uint8_t* const data_in,uint8_t* const data_out)
+uint32_t decompress_8bits_map_into_rgb(const uint8_t* const data_in,uint8_t* const data_out)
 {
     uint32_t new_size_of_data_out = 0;
     //uint32_t size_of_rgb_map = *(uint16_t*)((uint8_t*)data_in+1024);
@@ -614,7 +613,7 @@ uint32_t decompress_256bytes_map_into_rgb(const uint8_t* const data_in,uint8_t* 
 
 }
 
-uint64_t decompress_256bytes_map_into_rgb64(const uint8_t* const data_in,uint8_t* const data_out)
+uint64_t decompress_8bits_map_into_rgb64(const uint8_t* const data_in,uint8_t* const data_out)
 {
     uint32_t new_size_of_data_out = 0;
     //uint32_t size_of_rgb_map = *(uint16_t*)((uint8_t*)data_in+1024);

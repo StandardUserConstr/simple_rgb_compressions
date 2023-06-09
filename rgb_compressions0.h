@@ -51,27 +51,30 @@ uint64_t decompress_per1byte_data64(const uint8_t* const data_in,uint8_t* const 
 //=======================================================================================================================================
 //
 //             -------------------                   (IT'S NOT 1:1 VISUALISATION OF SIZE)
-// ORYGINAL   | 55 55 55 22 22 22 |           8it rgb map is in first 1024bytes of compressed data
+// ORYGINAL   | 55 55 55 22 22 22 |          8bit rgb map is in first 1024bytes of compressed data
 //             -------------------              ---------------------------------------------                  format of compressed data:
 //             -------------------             | 0 22 22 22 1 55 55 55 - - - - - - - - - - - |
-// COMPRESSED | 1  0              |            | - - - - - - - - - - - - - - - - - - - - - - |              0-1024bytes:     actual rgb map
-//             -------------------             | - - - - - - - - - - - - - - - - - - - - - - |              1024-1026bytes:  how many pixels is keeped in rgb map (256 is max)
-//                                             | - - - - - - - - - - - - - - - - - - - - - - |              1026-1030bytes:  image size in bytes
+// COMPRESSED | 1  0              |            | - - - - - - - - - - - - - - - - - - - - - - |              0-1023bytes:     actual rgb map
+//             -------------------             | - - - - - - - - - - - - - - - - - - - - - - |              1024-1025bytes:  how many pixels is keeped in rgb map (256 is max)
+//                                             | - - - - - - - - - - - - - - - - - - - - - - |              1026-1029bytes:  image size in bytes
 //             format of rgb map:              | - - - - - - - - - - - - - - - - - - - - - - |              1030-*bytes:     actual image in rgb map format
 //                                             | - - - - - - - - - - - - - - - - - - - - - - |
-//   (0-1byte) identificator from 1 to 255     | - - - - - - - - - - - - - - - - - - - - - - |
-//        (1-4bytes) 1 pixel (R G B)            ---------------------------------------------
+//     (0byte) identificator from 1 to 255     | - - - - - - - - - - - - - - - - - - - - - - |
+//         (1-4bytes) 1 pixel (R G B)           ---------------------------------------------
 //
 //
 
 //-- DANGEROUS --
 //returns size of new data that has been compressed/mapped and returned in data_out;
 //if returns 0 then it's error: invalid format;
+//"data_out" must have minimum size of (SIZEOF(data_in)/3)+1030
+//if variable "compress_in_selection_mode_or_descending" is true, then selection compression will be on run; else if variable is false then descending compression is at run;
+//for more colorfull images i recommend using "selecion mode";
 //
 //"size_of_palette_map_buffor" is for optymalisation purpose; this variable determines how much memory do you allocate for algorithm;
 //if u allocate not enough memory (for example for very colorful image 'cause there will be needed a lot of memory) then ur processor will do extra job to allocate memory in run;
-uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,uint32_t size_of_palette_map_buffor = 16384);
-uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,uint64_t size_of_palette_map_buffor = 16384);
+uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,bool compress_in_selection_mode_or_descending,uint32_t size_of_palette_map_buffor = 16384);
+uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,bool compress_in_selection_mode_or_descending,uint64_t size_of_palette_map_buffor = 16384);
 
 //-- DANGEROUS --
 //returns size of decompressed data pushed into "data_out" and decompressed data in "data_out";
@@ -80,7 +83,6 @@ uint32_t decompress_8bits_map_into_rgb(const uint8_t* const data_in,uint8_t* con
 uint64_t decompress_8bits_map_into_rgb64(const uint8_t* const data_in,uint8_t* const data_out);
 
 //NOTE: a good combination is to combine compressing first through "compress_rgb_into_8bit_map" and then through "compress_per1byte_data"
-
 //=======================================================================================================================================
 
 
@@ -328,7 +330,7 @@ uint64_t decompress_per1byte_data64(const uint8_t* const data_in,uint8_t* const 
 }
 
 
-uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,uint32_t size_of_palette_map_buffor)
+uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,bool compress_in_selection_mode_or_descending,uint32_t size_of_palette_map_buffor)
 {
     if(size_of_data_in%3!=0) return 0; //if data for sure isn't in rgb format;
     if(size_of_palette_map_buffor==0) return 0;
@@ -400,23 +402,72 @@ uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const
     uint32_t* bitmap = (uint32_t*)malloc(size_of_bitmap*sizeof(uint32_t));
     for(int32_t i = 0; i!=size_of_bitmap; i++) *((uint8_t*)((uint32_t*)&bitmap[i])) = i;
 
-    uint32_t higher_number = numbers_of_repeating_palletes[0];
-    uint32_t higher_number_in_array = 0;
 
-    for(uint32_t i = 0,j; i!=size_of_bitmap; i++)
+    if(size_of_bitmap!=256)
     {
-        for(j = 0; j!=numbers_of_all_palettes; j++)
+        for(uint32_t i = 0; i!=size_of_bitmap; i++)
         {
-            if(numbers_of_repeating_palletes[j]>higher_number)
-            {
-                higher_number = numbers_of_repeating_palletes[j];
-                higher_number_in_array = j;
-            }
+            *(uint16_t*)((uint8_t*)((uint32_t*)&bitmap[i])+1) = *(uint16_t*)((uint8_t*)&all_color_palettes[i][0]);
+            *((uint8_t*)((uint32_t*)&bitmap[i])+3) = all_color_palettes[i][2];
         }
-        numbers_of_repeating_palletes[higher_number_in_array] = 0;
-        *(uint16_t*)((uint8_t*)((uint32_t*)&bitmap[i])+1) = *(uint16_t*)((uint8_t*)&all_color_palettes[higher_number_in_array][0]);
-        *((uint8_t*)((uint32_t*)&bitmap[i])+3) = all_color_palettes[higher_number_in_array][2];
-        higher_number = 0;
+    }
+    else if(compress_in_selection_mode_or_descending==1)
+    {
+        uint32_t best_abs = 259;
+        uint32_t best_abs_in_array = 0;
+        uint32_t actual_abs = 0;
+        uint32_t second_counter;
+        uint32_t which_color = 0;
+        uint32_t popularity_of_color = 0;
+        int32_t actual_color = 0;
+
+        for(uint32_t i = 0; i!=size_of_bitmap; i++)
+        {
+            for(second_counter = 0; second_counter!=numbers_of_all_palettes; second_counter++)
+            {
+                actual_abs = abs((int)actual_color-all_color_palettes[second_counter][which_color]);
+                if(actual_abs-3<=best_abs)
+                {
+                    if((!(actual_abs<best_abs))&&numbers_of_repeating_palletes[second_counter]<=popularity_of_color) continue;
+                    best_abs = actual_abs;
+                    popularity_of_color = numbers_of_repeating_palletes[second_counter];
+                    best_abs_in_array = second_counter;
+                }
+            }
+            numbers_of_repeating_palletes[best_abs_in_array] = 0;
+            *(uint16_t*)((uint8_t*)((uint32_t*)&bitmap[i])+1) = *(uint16_t*)((uint8_t*)&all_color_palettes[best_abs_in_array][0]);
+            *((uint8_t*)((uint32_t*)&bitmap[i])+3) = all_color_palettes[best_abs_in_array][2];
+            actual_color+=3;
+            if(actual_color==258)
+            {
+                actual_color = 0;
+                which_color++;
+                if(which_color==3) which_color = 0;
+            }
+            popularity_of_color = 0;
+            best_abs = 259;
+        }
+    }
+    else
+    {
+        uint32_t higher_number = numbers_of_repeating_palletes[0];
+        uint32_t higher_number_in_array = 0;
+
+        for(uint32_t i = 0,j; i!=size_of_bitmap; i++)
+        {
+            for(j = 0; j!=numbers_of_all_palettes; j++)
+            {
+                if(numbers_of_repeating_palletes[j]>higher_number)
+                {
+                    higher_number = numbers_of_repeating_palletes[j];
+                    higher_number_in_array = j;
+                }
+            }
+            numbers_of_repeating_palletes[higher_number_in_array] = 0;
+            *(uint16_t*)((uint8_t*)((uint32_t*)&bitmap[i])+1) = *(uint16_t*)((uint8_t*)&all_color_palettes[higher_number_in_array][0]);
+            *((uint8_t*)((uint32_t*)&bitmap[i])+3) = all_color_palettes[higher_number_in_array][2];
+            higher_number = 0;
+        }
     }
 
     for(int32_t i = 0; i!=size_of_bitmap; i++) *((uint32_t*)data_out+i) = bitmap[i];
@@ -460,7 +511,7 @@ uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const
     return new_size_of_data_out;
 }
 
-uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,uint64_t size_of_palette_map_buffor)
+uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,bool compress_in_selection_mode_or_descending,uint64_t size_of_palette_map_buffor)
 {
     if(size_of_data_in%3!=0) return 0; //if data for sure isn't in rgb format;
     if(size_of_palette_map_buffor==0) return 0;
@@ -532,23 +583,71 @@ uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* con
     uint32_t* bitmap = (uint32_t*)malloc(size_of_bitmap*sizeof(uint32_t));
     for(int32_t i = 0; i!=size_of_bitmap; i++) *((uint8_t*)((uint32_t*)&bitmap[i])) = i;
 
-    uint64_t higher_number = numbers_of_repeating_palletes[0];
-    uint64_t higher_number_in_array = 0;
-
-    for(uint64_t i = 0,j; i!=size_of_bitmap; i++)
+    if(size_of_bitmap!=256)
     {
-        for(j = 0; j!=numbers_of_all_palettes; j++)
+        for(uint64_t i = 0; i!=size_of_bitmap; i++)
         {
-            if(numbers_of_repeating_palletes[j]>higher_number)
-            {
-                higher_number = numbers_of_repeating_palletes[j];
-                higher_number_in_array = j;
-            }
+            *(uint16_t*)((uint8_t*)((uint32_t*)&bitmap[i])+1) = *(uint16_t*)((uint8_t*)&all_color_palettes[i][0]);
+            *((uint8_t*)((uint32_t*)&bitmap[i])+3) = all_color_palettes[i][2];
         }
-        numbers_of_repeating_palletes[higher_number_in_array] = 0;
-        *(uint16_t*)((uint8_t*)((uint32_t*)&bitmap[i])+1) = *(uint16_t*)((uint8_t*)&all_color_palettes[higher_number_in_array][0]);
-        *((uint8_t*)((uint32_t*)&bitmap[i])+3) = all_color_palettes[higher_number_in_array][2];
-        higher_number = 0;
+    }
+    else if(compress_in_selection_mode_or_descending==1)
+    {
+        uint64_t best_abs = 259;
+        uint64_t best_abs_in_array = 0;
+        uint64_t actual_abs = 0;
+        uint64_t second_counter;
+        uint64_t which_color = 0;
+        uint64_t popularity_of_color = 0;
+        int32_t actual_color = 0;
+
+        for(uint64_t i = 0; i!=size_of_bitmap; i++)
+        {
+            for(second_counter = 0; second_counter!=numbers_of_all_palettes; second_counter++)
+            {
+                actual_abs = abs((int)actual_color-all_color_palettes[second_counter][which_color]);
+                if(actual_abs-3<=best_abs)
+                {
+                    if((!(actual_abs<best_abs))&&numbers_of_repeating_palletes[second_counter]<=popularity_of_color) continue;
+                    best_abs = actual_abs;
+                    popularity_of_color = numbers_of_repeating_palletes[second_counter];
+                    best_abs_in_array = second_counter;
+                }
+            }
+            numbers_of_repeating_palletes[best_abs_in_array] = 0;
+            *(uint16_t*)((uint8_t*)((uint32_t*)&bitmap[i])+1) = *(uint16_t*)((uint8_t*)&all_color_palettes[best_abs_in_array][0]);
+            *((uint8_t*)((uint32_t*)&bitmap[i])+3) = all_color_palettes[best_abs_in_array][2];
+            actual_color+=3;
+            if(actual_color==258)
+            {
+                actual_color = 0;
+                which_color++;
+                if(which_color==3) which_color = 0;
+            }
+            popularity_of_color = 0;
+            best_abs = 259;
+        }
+    }
+    else
+    {
+        uint64_t higher_number = numbers_of_repeating_palletes[0];
+        uint64_t higher_number_in_array = 0;
+
+        for(uint64_t i = 0,j; i!=size_of_bitmap; i++)
+        {
+            for(j = 0; j!=numbers_of_all_palettes; j++)
+            {
+                if(numbers_of_repeating_palletes[j]>higher_number)
+                {
+                    higher_number = numbers_of_repeating_palletes[j];
+                    higher_number_in_array = j;
+                }
+            }
+            numbers_of_repeating_palletes[higher_number_in_array] = 0;
+            *(uint16_t*)((uint8_t*)((uint32_t*)&bitmap[i])+1) = *(uint16_t*)((uint8_t*)&all_color_palettes[higher_number_in_array][0]);
+            *((uint8_t*)((uint32_t*)&bitmap[i])+3) = all_color_palettes[higher_number_in_array][2];
+            higher_number = 0;
+        }
     }
 
     for(int32_t i = 0; i!=size_of_bitmap; i++) *((uint32_t*)data_out+i) = bitmap[i];
@@ -631,4 +730,3 @@ uint64_t decompress_8bits_map_into_rgb64(const uint8_t* const data_in,uint8_t* c
 
     return new_size_of_data_out;
 }
-

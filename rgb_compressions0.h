@@ -47,11 +47,11 @@ uint64_t decompress_per1byte_data64(const uint8_t* const data_in,uint8_t* const 
 //=======================================================================================================================================
 
 
-//THIS COMPRESSION 'CAUSING THE LOSS OF THE IMAGE; THIS COMPRESSION CHANGING COLOR PALETTE INTO 256BYTE COLOR PALETTE;
+//THIS COMPRESSION 'CAUSING THE LOSS OF THE IMAGE; THIS COMPRESSION CHANGING COLOR PALETTE INTO 8BIT COLOR PALETTE;
 //=======================================================================================================================================
 //
 //             -------------------                   (IT'S NOT 1:1 VISUALISATION OF SIZE)
-// ORYGINAL   | 55 55 55 22 22 22 |         256bit rgb map is in first 1024bytes of compressed data
+// ORYGINAL   | 55 55 55 22 22 22 |           8it rgb map is in first 1024bytes of compressed data
 //             -------------------              ---------------------------------------------                  format of compressed data:
 //             -------------------             | 0 22 22 22 1 55 55 55 - - - - - - - - - - - |
 // COMPRESSED | 1  0              |            | - - - - - - - - - - - - - - - - - - - - - - |              0-1024bytes:     actual rgb map
@@ -79,7 +79,7 @@ uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* con
 uint32_t decompress_8bits_map_into_rgb(const uint8_t* const data_in,uint8_t* const data_out);
 uint64_t decompress_8bits_map_into_rgb64(const uint8_t* const data_in,uint8_t* const data_out);
 
-//NOTE: a good combination is to combine compressing first through "compress_rgb_into_256bytes_map" and then through "compress_per1byte_data"
+//NOTE: a good combination is to combine compressing first through "compress_rgb_into_8bit_map" and then through "compress_per1byte_data"
 
 //=======================================================================================================================================
 

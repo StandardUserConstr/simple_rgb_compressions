@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 //=======================================================================================================================================
 //  --------------------
@@ -18,6 +19,7 @@ uint64_t compress_per3bytes_rgb_data64(const uint8_t* const data_in,uint8_t* con
 //-- DANGEROUS --
 //returns size of decompressed data pushed into "data_out" and decompressed data in "data_out";
 //if "data_out" is too small, then program will crash; size of data_out should be decompressed version of this data;
+//if size of decompressed version of data is unknown, then size of "data_out" should be SIZEOF(data_in)*253;
 //if returns 0 then it's error: invalid format;
 uint32_t decompress_per3bytes_rgb_data(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in);
 uint64_t decompress_per3bytes_rgb_data64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in);
@@ -41,6 +43,7 @@ uint64_t compress_per1byte_data64(const uint8_t* const data_in,uint8_t* const da
 //-- DANGEROUS --
 //returns size of decompressed data pushed into "data_out" and decompressed data in "data_out";
 //if "data_out" is too small, then program will crash; size of data_out should be decompressed version of this data;
+//if size of decompressed version of data is unknown, then size of "data_out" should be SIZEOF(data_in)*253;
 //if returns 0 then it's error: invalid format;
 uint32_t decompress_per1byte_data(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in);
 uint64_t decompress_per1byte_data64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in);
@@ -73,8 +76,13 @@ uint64_t decompress_per1byte_data64(const uint8_t* const data_in,uint8_t* const 
 //
 //"size_of_palette_map_buffor" is for optymalisation purpose; this variable determines how much memory do you allocate for algorithm;
 //if u allocate not enough memory (for example for very colorful image 'cause there will be needed a lot of memory) then ur processor will do extra job to allocate memory in run;
+#ifdef __cplusplus
 uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,bool compress_in_selection_mode_or_descending,uint32_t size_of_palette_map_buffor = 16384);
 uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,bool compress_in_selection_mode_or_descending,uint64_t size_of_palette_map_buffor = 16384);
+#else
+uint32_t compress_rgb_into_8bits_map(const uint8_t* const data_in,uint8_t* const data_out,const uint32_t size_of_data_in,bool compress_in_selection_mode_or_descending,uint32_t size_of_palette_map_buffor);
+uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* const data_out,const uint64_t size_of_data_in,bool compress_in_selection_mode_or_descending,uint64_t size_of_palette_map_buffor);
+#endif // __cplusplus
 
 //-- DANGEROUS --
 //returns size of decompressed data pushed into "data_out" and decompressed data in "data_out";
@@ -82,7 +90,7 @@ uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* con
 uint32_t decompress_8bits_map_into_rgb(const uint8_t* const data_in,uint8_t* const data_out);
 uint64_t decompress_8bits_map_into_rgb64(const uint8_t* const data_in,uint8_t* const data_out);
 
-//NOTE: a good combination is to combine compressing first through "compress_rgb_into_8bit_map" and then through "compress_per1byte_data"
+//NOTE: a good combination is to combine compressing first through "compress_rgb_into_8bit_map" and then through "compress_per3byte_data"
 //=======================================================================================================================================
 
 

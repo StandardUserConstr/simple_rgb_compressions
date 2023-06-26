@@ -129,7 +129,7 @@ uint8_t compress_option(const char* bmp_file_to_compress,const char* output_file
 
     printf("\ncompressing in progress...");
     unsigned int data_size = compress_rgb_into_8bits_map(bitmap_data0,bitmap_data1,size_of_bitmap,1,16384);       //EXAMPLE OF USING COMPRESS ALGORITHMS
-    data_size = compress_per3bytes_rgb_data(bitmap_data1,bitmap_data0,data_size);                                 //EXAMPLE OF USING COMPRESS ALGORITHMS
+    data_size = compress_per1byte_data(bitmap_data1,bitmap_data0,data_size);                                      //EXAMPLE OF USING COMPRESS ALGORITHMS
 
     printf(" DONE");
     printf("\nsize_of_compressed_data=%zd bytes\n",data_size);
@@ -194,8 +194,8 @@ uint8_t decompress_option(const char* data_to_decompress,const char* output_bmp_
     fseek(file,starting_pixel_data,SEEK_SET);
     fread(bitmap_data0,1,size_of_compressed_file-starting_pixel_data,file);
     fclose(file);
-    unsigned int data_size = decompress_per3bytes_rgb_data(bitmap_data0,bitmap_data1,size_of_compressed_file-starting_pixel_data);    //EXAMPLE OF USING DECOMPRESS ALGORITHMS
-    data_size = decompress_8bits_map_into_rgb(bitmap_data1,bitmap_data0);                                                             //EXAMPLE OF USING DECOMPRESS ALGORITHMS
+    unsigned int data_size = decompress_per1byte_data(bitmap_data0,bitmap_data1,size_of_compressed_file-starting_pixel_data);    //EXAMPLE OF USING DECOMPRESS ALGORITHMS
+    data_size = decompress_8bits_map_into_rgb(bitmap_data1,bitmap_data0);                                                        //EXAMPLE OF USING DECOMPRESS ALGORITHMS
     printf(" DONE\n");
     printf("size_of_decompressed_data=%zd bytes",data_size);
     write_bmp(output_bmp_file,bitmap_data0,width,height);

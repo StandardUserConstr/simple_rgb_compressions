@@ -90,7 +90,7 @@ uint64_t compress_rgb_into_8bits_map64(const uint8_t* const data_in,uint8_t* con
 uint32_t decompress_8bits_map_into_rgb(const uint8_t* const data_in,uint8_t* const data_out);
 uint64_t decompress_8bits_map_into_rgb64(const uint8_t* const data_in,uint8_t* const data_out);
 
-//NOTE: a good combination is to combine compressing first through "compress_rgb_into_8bit_map" and then through "compress_per3byte_data"
+//NOTE: a good combination is to combine compressing first through "compress_rgb_into_8bit_map" and then through "compress_per1byte_data"
 //=======================================================================================================================================
 
 

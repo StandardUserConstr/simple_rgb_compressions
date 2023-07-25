@@ -246,3 +246,4 @@ void write_bmp(const char* const filename,const uint8_t* const bitmap,const uint
     fclose(fp);
     return;
 }
+
